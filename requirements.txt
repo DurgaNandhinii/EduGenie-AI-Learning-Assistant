@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+jinja2==3.1.4
+python-dotenv==1.0.1
+google-generativeai==0.8.3
+pydantic==2.9.2
+python-multipart==0.0.9
+
+# Optional: only needed if EXPLAIN_MODE=local in .env (uses a local
+# instruction-tuned model instead of Gemini for the /explain endpoint).
+# Uncomment the two lines below if you want to use the local model.
+# transformers==4.44.2
+# torch==2.4.1

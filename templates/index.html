@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduGenie - AI Learning Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🧞 Welcome to EduGenie</h1>
+      <p>Your personal AI tutor for learning support, powered by Google Gemini</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="qa">Ask a Question</button>
+      <button class="tab-btn" data-tab="explain">Explain a Topic</button>
+      <button class="tab-btn" data-tab="summarize">Summarize</button>
+      <button class="tab-btn" data-tab="quiz">Generate Quiz</button>
+      <button class="tab-btn" data-tab="learn">Learning Path</button>
+    </div>
+
+    <!-- Q&A -->
+    <section class="panel active" id="panel-qa">
+      <h2>Ask EduGenie a Question</h2>
+      <p class="hint">e.g. "Which is the largest ocean?"</p>
+      <input type="text" id="qaInput" placeholder="Why is the sky blue?" />
+      <button class="primary" onclick="askQuestion()">Get Answer</button>
+      <div class="result" id="qaResult"></div>
+    </section>
+
+    <!-- Explanation -->
+    <section class="panel" id="panel-explain">
+      <h2>Need an Explanation?</h2>
+      <p class="hint">Enter any concept and get a simple, student-friendly explanation.</p>
+      <input type="text" id="explainInput" placeholder="Photosynthesis" />
+      <button class="primary" onclick="explainTopic()">Explain</button>
+      <div class="result" id="explainResult"></div>
+    </section>
+
+    <!-- Summarize -->
+    <section class="panel" id="panel-summarize">
+      <h2>Summarize a Paragraph</h2>
+      <p class="hint">Paste a long passage to get a concise summary.</p>
+      <textarea id="summaryInput" rows="6" placeholder="Paste long content to summarize..."></textarea>
+      <button class="primary" onclick="summarizeText()">Summarize</button>
+      <div class="result" id="summaryResult"></div>
+    </section>
+
+    <!-- Quiz -->
+    <section class="panel" id="panel-quiz">
+      <h2>Generate a Quiz</h2>
+      <p class="hint">Enter a topic or passage to generate a 3-question multiple choice quiz.</p>
+      <input type="text" id="quizInput" placeholder="Pythagoras theorem" />
+      <button class="primary" onclick="generateQuiz()">Generate Quiz</button>
+      <div class="result" id="quizResult"></div>
+    </section>
+
+    <!-- Learning Path -->
+    <section class="panel" id="panel-learn">
+      <h2>Get a Personalized Learning Path</h2>
+      <p class="hint">Enter a topic to get a structured beginner-to-advanced study plan.</p>
+      <input type="text" id="learnInput" placeholder="SQL" />
+      <button class="primary" onclick="getLearningPath()">Get Recommendations</button>
+      <div class="result" id="learnResult"></div>
+    </section>
+
+    <footer>EduGenie &middot; Google Gemini Powered Learning Assistant</footer>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------------
+    // Tab switching
+    // ------------------------------------------------------------------
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    function setLoading(el, message) {
+      el.className = "result loading";
+      el.textContent = message;
+    }
+
+    function setError(el, message) {
+      el.className = "result error";
+      el.textContent = message;
+    }
+
+    function setSuccess(el, htmlOrText, isHtml = false) {
+      el.className = "result";
+      if (isHtml) {
+        el.innerHTML = htmlOrText;
+      } else {
+        el.textContent = htmlOrText;
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Q&A
+    // ------------------------------------------------------------------
+    async function askQuestion() {
+      const question = document.getElementById("qaInput").value.trim();
+      const result = document.getElementById("qaResult");
+      if (!question) return setError(result, "Please enter a question.");
+
+      setLoading(result, "Thinking...");
+      try {
+        const res = await fetch("/qa?question=" + encodeURIComponent(question));
+        const data = await res.json();
+        if (data.answer) {
+          setSuccess(result, data.answer);
+        } else {
+          setError(result, data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        setError(result, "Request failed: " + err.message);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Explanation
+    // ------------------------------------------------------------------
+    async function explainTopic() {
+      const topic = document.getElementById("explainInput").value.trim();
+      const result = document.getElementById("explainResult");
+      if (!topic) return setError(result, "Please enter a topic.");
+
+      setLoading(result, "Preparing explanation...");
+      try {
+        const res = await fetch("/explain/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic }),
+        });
+        const data = await res.json();
+        if (data.explanation) {
+          setSuccess(result, data.explanation);
+        } else {
+          setError(result, data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        setError(result, "Request failed: " + err.message);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Summarize
+    // ------------------------------------------------------------------
+    async function summarizeText() {
+      const text = document.getElementById("summaryInput").value.trim();
+      const result = document.getElementById("summaryResult");
+      if (!text) return setError(result, "Please paste some text to summarize.");
+
+      setLoading(result, "Summarizing...");
+      try {
+        const res = await fetch("/summarize/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (data.summary) {
+          setSuccess(result, data.summary);
+        } else {
+          setError(result, data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        setError(result, "Request failed: " + err.message);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Quiz
+    // ------------------------------------------------------------------
+    async function generateQuiz() {
+      const text = document.getElementById("quizInput").value.trim();
+      const result = document.getElementById("quizResult");
+      if (!text) return setError(result, "Please enter a topic or passage.");
+
+      setLoading(result, "Generating quiz...");
+      try {
+        const res = await fetch("/quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        const quiz = data.quiz;
+
+        if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
+          return setError(result, "Could not generate a quiz. Try again.");
+        }
+        if (quiz[0].error) {
+          return setError(result, quiz[0].error);
+        }
+
+        renderQuiz(result, quiz);
+      } catch (err) {
+        setError(result, "Request failed: " + err.message);
+      }
+    }
+
+    function renderQuiz(container, quiz) {
+      container.className = "result";
+      container.innerHTML = "";
+
+      quiz.forEach((q, qIndex) => {
+        const qDiv = document.createElement("div");
+        qDiv.className = "quiz-question";
+
+        const qTitle = document.createElement("p");
+        qTitle.className = "q-title";
+        qTitle.textContent = `Q${qIndex + 1}: ${q.question}`;
+        qDiv.appendChild(qTitle);
+
+        const optsDiv = document.createElement("div");
+        optsDiv.className = "quiz-options";
+
+        q.options.forEach((opt, oIndex) => {
+          const label = document.createElement("label");
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = `q${qIndex}`;
+          input.value = opt;
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(opt));
+          optsDiv.appendChild(label);
+        });
+        qDiv.appendChild(optsDiv);
+
+        const checkBtn = document.createElement("button");
+        checkBtn.className = "check-btn";
+        checkBtn.textContent = "Check Answer";
+
+        const feedback = document.createElement("div");
+        feedback.className = "quiz-feedback";
+
+        checkBtn.addEventListener("click", () => {
+          const selected = qDiv.querySelector(`input[name="q${qIndex}"]:checked`);
+          if (!selected) {
+            feedback.className = "quiz-feedback incorrect";
+            feedback.textContent = "Please select an option first.";
+            return;
+          }
+          if (selected.value === q.answer) {
+            feedback.className = "quiz-feedback correct";
+            feedback.textContent = "✅ Correct!";
+          } else {
+            feedback.className = "quiz-feedback incorrect";
+            feedback.textContent = `❌ Incorrect. Correct answer: ${q.answer}`;
+          }
+        });
+
+        qDiv.appendChild(checkBtn);
+        qDiv.appendChild(feedback);
+        container.appendChild(qDiv);
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Learning Path
+    // ------------------------------------------------------------------
+    async function getLearningPath() {
+      const topic = document.getElementById("learnInput").value.trim();
+      const result = document.getElementById("learnResult");
+      if (!topic) return setError(result, "Please enter a topic.");
+
+      setLoading(result, "Building your learning path...");
+      try {
+        const res = await fetch("/learn/recommendations?topic=" + encodeURIComponent(topic));
+        const data = await res.json();
+        if (data.recommendation) {
+          setSuccess(result, data.recommendation);
+        } else {
+          setError(result, data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        setError(result, "Request failed: " + err.message);
+      }
+    }
+
+    // Allow "Enter" key to submit for single-line inputs
+    document.getElementById("qaInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") askQuestion();
+    });
+    document.getElementById("explainInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") explainTopic();
+    });
+    document.getElementById("quizInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") generateQuiz();
+    });
+    document.getElementById("learnInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") getLearningPath();
+    });
+  </script>
+</body>
+</html>
